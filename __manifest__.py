@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "Reporte Inventario Rotativo",
+    'name': "Report Rotating Inventory",
 
     'summary': """
-       Reporte que calcula el inventario rotativo dado un rango de fechas""",
+       This report calculate the rotating inventory""",
 
     'description': """
-   Inventario Rotativo por rango de fecha
+   Rotating inventory by date range
     """,
 
     'author': "Adrián de la Cruz",
@@ -15,8 +15,8 @@
     # Categories can be used to filter modules in modules listing
     # Check https://github.com/odoo/odoo/blob/master/openerp/addons/base/module/module_data.xml
     # for the full list
-    'category': 'Uncategorized',
-    'version': '0.2',
+    'category': 'Warehouse',
+    'version': '0.1',
 
     # any module necessary for this one to work correctly
     'depends': ['base','stock','product','stock_account'],
