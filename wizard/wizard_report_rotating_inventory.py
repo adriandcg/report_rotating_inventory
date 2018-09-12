@@ -7,23 +7,23 @@ import time
 from functools import reduce
 
 class WizardReportRotatingInventory(models.TransientModel):
-    _name = 'stock.report.rotating.inventory'
-    _description = 'Reporte de Inventario Rotativo'
+    _name = 'report.rotating.inventory'
+    _description = 'Report Rotating Inventory'
 
 
-    initial_date = fields.Date('Fecha Inicial', help="Debe seleccionar una fecha inicial", required=True)
-    final_date = fields.Date('Fecha Final', help="Debe seleccionar una fecha final", required=True)
+    initial_date = fields.Date('Initial', help="You should specify a initial date", required=True)
+    final_date = fields.Date('Final', help="You should specify a final date", required=True)
 
     def open_table(self):
         self.ensure_one()
 
-        tree_view_id = self.env.ref('filtro_valoracion_inventario.view_stock_report_rotating_inventory_tree').id
-        form_view_id = self.env.ref('filtro_valoracion_inventario.view_stock_report_rotating_inventory_form').id
+        tree_view_id = self.env.ref('report_rotating_inventory.view_report_rotating_inventory_tree').id
+        form_view_id = self.env.ref('report_rotating_inventory.view_report_rotating_inventory_form').id
         action = {
         'type': 'ir.actions.act_window',
         'views': [(tree_view_id, 'tree'), (form_view_id, 'form')],
         'view_mode': 'tree,form',
-        'name': _('Inventario Rotativo'),
+        'name': _('Rotating Inventory'),
         'res_model': 'stock.quant',
         'context': {'initial_date': self.initial_date, 'final_date': self.final_date}
         }
@@ -32,37 +32,37 @@ class WizardReportRotatingInventory(models.TransientModel):
 class stock_quant_rotating(models.Model):
     _inherit = 'stock.quant'
 
-    categoria_interna   = fields.Many2one('product.category', string='Categoria interna', related='product_id.product_tmpl_id.categ_id')
-    inventario_inicial  = fields.Float(string="Inventario Inicial", compute='_compute_inventario_inicial')
-    compras             = fields.Float(string="Compras")
-    compras_devolucion  = fields.Float(string="Compras Devolucion")
-    ventas              = fields.Float(string="Ventas")
-    ventas_devolucion   = fields.Float(string="Ventas Devolucion")
-    interno_entrada     = fields.Float(string="Interno Entradas")
-    interno_salida      = fields.Float(string="Interno Salidas")
-    produccion_entrada  = fields.Float(string="Produccion Entradas")
-    produccion_salida   = fields.Float(string="Produccion Salidas")
-    traspaso_entrada    = fields.Float(string="Traspaso Entradas")
-    traspaso_salida     = fields.Float(string="Traspaso Salidas")
-    maquilador_entrada  = fields.Float(string="Maquilador Entradas")
-    maquilador_salida   = fields.Float(string="Maquilador Salidas")
-    ajustes             = fields.Float(string="Ajustes")
-    inventario_final    = fields.Float(string="Inventario Final")
+    category            = fields.Many2one('product.category', string='Category', related='product_id.product_tmpl_id.categ_id')
+    initial             = fields.Float(string="Initial", compute='_compute_initial')
+    purchase            = fields.Float(string="Purchase")
+    purchase_refund     = fields.Float(string="purchase Dev.")
+    sale                = fields.Float(string="Sale")
+    sale_refund         = fields.Float(string="Sale Refund")
+    internal_in     = fields.Float(string="Internal In")
+    internal_out      = fields.Float(string="Internal Out")
+    mrp_in  = fields.Float(string="MRP In")
+    mrp_out   = fields.Float(string="MRP Out")
+    transfer_in    = fields.Float(string="Transfer In")
+    transfer_out     = fields.Float(string="Transfer Out")
+    consignment_in  = fields.Float(string="Consignment In")
+    consignment_out   = fields.Float(string="Consignment Out")
+    adjust             = fields.Float(string="adjust")
+    final               = fields.Float(string="Final")
     kgs			        = fields.Float(string="KG")
 
     @api.one
     @api.depends('product_id', 'location_id', 'lot_id', 'package_id')
-    def _compute_inventario_inicial(self):
+    def _compute_initial(self):
         cr = self.env.cr
-        search_feci = self.env.context.get('initial_date', False)
-        search_fecf = self.env.context.get('final_date', False)
+        initial_date = self.env.context.get('initial_date', False)
+        final_date = self.env.context.get('final_date', False)
 
-        self.inventario_inicial = 0.0
-        self.inventario_final = 0.0
+        self.initial = 0.0
+        self.final = 0.0
         self.kgs = 0.0
-        lote = "=" + str(self.lot_id.id) if self.lot_id.id else 'is null'
-        paquete = "=" + str(self.package_id.id) if self.package_id.id else 'is null'
-        sql_periodo = """SELECT sm.product_uom_qty, sm.location_id, sm.location_dest_id,
+        lot_id = "=" + str(self.lot_id.id) if self.lot_id.id else 'is null'
+        package_id = "=" + str(self.package_id.id) if self.package_id.id else 'is null'
+        sql_range = """SELECT sm.product_uom_qty, sm.location_id, sm.location_dest_id,
                 CASE
                     WHEN sm.purchase_line_id is not null THEN 'purchase'
                     WHEN sm.sale_line_id     is not null THEN 'sale'
@@ -70,7 +70,7 @@ class stock_quant_rotating(models.Model):
                     WHEN sm_sp_spt.code = 'internal' and sm_sl.location_id = sm_sld.location_id THEN 'internal'
                     WHEN sm_sp_spt.code = 'internal' and sm_sl.location_id != sm_sld.location_id THEN (
                         CASE
-                            WHEN sm_sl.partner_id is not null or sm_sld.partner_id is not null THEN 'external'
+                            WHEN sm_sl.partner_id is not null or sm_sld.partner_id is not null THEN 'consignment'
                             ELSE 'transfer'
                         END
                     )
@@ -89,8 +89,8 @@ class stock_quant_rotating(models.Model):
                 LEFT JOIN stock_move_line sml          ON sml.move_id  = sm.id
                 WHERE sm.state = 'done' AND sm.product_id = {0} AND (sm.location_id = {1} or sm.location_dest_id = {1})
                 AND sml.lot_id {2} AND sml.package_id {3} AND sm.date BETWEEN '{4}' AND '{5}'
-                """.format(self.product_id.id, self.location_id.id, lote, paquete, search_feci, search_fecf)
-        sql_inicial = """SELECT COALESCE(SUM(CASE 
+                """.format(self.product_id.id, self.location_id.id, lot_id, package_id, initial_date, final_date)
+        sql_initial = """SELECT COALESCE(SUM(CASE 
                             WHEN sm.location_dest_id = {1} THEN sm.product_uom_qty
                             ELSE sm.product_uom_qty * -1
                             END),0)
@@ -98,7 +98,7 @@ class stock_quant_rotating(models.Model):
                         LEFT JOIN stock_move_line sml ON sml.move_id  = sm.id
                         WHERE sm.state  = 'done' AND sm.product_id   = {0} AND (sm.location_dest_id = {1} or sm.location_id = {1})
                         AND sml.lot_id  {2} AND sml.package_id  {3} AND sm.date < '{4}'
-                """.format(self.product_id.id, self.location_id.id, lote, paquete, search_feci)
+                """.format(self.product_id.id, self.location_id.id, lot_id, package_id, initial_date)
         sql_final = """SELECT COALESCE(SUM(CASE 
                             WHEN sm.location_dest_id = {1} THEN sm.product_uom_qty
                             ELSE sm.product_uom_qty * -1
@@ -107,44 +107,40 @@ class stock_quant_rotating(models.Model):
                         LEFT JOIN stock_move_line sml ON sml.move_id  = sm.id
                         WHERE sm.state  = 'done' AND sm.product_id   = {0} AND (sm.location_dest_id = {1} or sm.location_id = {1})
                         AND sml.lot_id  {2} AND sml.package_id  {3} AND sm.date <= '{4}'
-                """.format(self.product_id.id, self.location_id.id, lote, paquete, search_fecf)
-        cr.execute(str(sql_inicial))
-        self.inventario_inicial  = max(cr.fetchone())
+                """.format(self.product_id.id, self.location_id.id, lot_id, package_id, final_date)
+        cr.execute(str(sql_initial))
+        self.initial  = max(cr.fetchone())
         cr.execute(str(sql_final))
-        self.inventario_final    = max(cr.fetchone())
+        self.final    = max(cr.fetchone())
 
-        if self.inventario_final > 0.0:
+        if self.final > 0.0:
             if self.product_id.weight:
-                self.kgs = self.inventario_final * self.product_id.weight
-        cr.execute(str(sql_periodo))
-        filas_periodo = cr.fetchall()
+                self.kgs = self.final * self.product_id.weight
+        cr.execute(str(sql_range))
+        range_moves = cr.fetchall()
 
-        if(filas_periodo != []):
-	        filas_periodo = [{'qty':float(x[0]), 'location_id':int(x[1]), 'location_dest_id':int(x[2]), 'type':str(x[3])} for x in filas_periodo]
-            #filas_periodo = list(map(lambda x: {'qty':float(x[0]), 'location_id':int(x[1]), 'location_dest_id':int(x[2]), 'type':str(x[3])}, filas_periodo))
-        self.compras             = self.sumFilter(filas_periodo, self.location_id.id, move_type='purchase', location_dest=True)
-        self.compras_devolucion  = self.sumFilter(filas_periodo, self.location_id.id, move_type='purchase')
-        self.ventas              = self.sumFilter(filas_periodo, self.location_id.id, move_type='sale')
-        self.ventas_devolucion   = self.sumFilter(filas_periodo, self.location_id.id, move_type='sale',     location_dest=True)
-        self.interno_entrada     = self.sumFilter(filas_periodo, self.location_id.id, move_type='internal', location_dest=True)
-        self.interno_salida      = self.sumFilter(filas_periodo, self.location_id.id, move_type='internal')
-        self.produccion_entrada  = self.sumFilter(filas_periodo, self.location_id.id, move_type='mrp_operation', location_dest=True)
-        self.produccion_salida   = self.sumFilter(filas_periodo, self.location_id.id, move_type='mrp_operation')
-        self.traspaso_entrada    = self.sumFilter(filas_periodo, self.location_id.id, move_type='transfer', location_dest=True)
-        self.traspaso_salida     = self.sumFilter(filas_periodo, self.location_id.id, move_type='transfer')
-        self.maquilador_entrada  = self.sumFilter(filas_periodo, self.location_id.id, move_type='external', location_dest=True)
-        self.maquilador_salida   = self.sumFilter(filas_periodo, self.location_id.id, move_type='external')
-        self.ajustes             = self.sumFilter(filas_periodo, self.location_id.id, move_type='inventary', location_dest=True) - self.sumFilter(filas_periodo, self.location_id.id, move_type='inventary')
+        if(range_moves != []):
+	        range_moves = [{'qty':float(x[0]), 'location_id':int(x[1]), 'location_dest_id':int(x[2]), 'type':str(x[3])} for x in range_moves]
+        self.purchase             = self.sumFilter(range_moves, self.location_id.id, move_type='purchase', location_dest=True)
+        self.purchase_refund  = self.sumFilter(range_moves, self.location_id.id, move_type='purchase')
+        self.sale              = self.sumFilter(range_moves, self.location_id.id, move_type='sale')
+        self.sale_refund   = self.sumFilter(range_moves, self.location_id.id, move_type='sale',     location_dest=True)
+        self.internal_in     = self.sumFilter(range_moves, self.location_id.id, move_type='internal', location_dest=True)
+        self.internal_out      = self.sumFilter(range_moves, self.location_id.id, move_type='internal')
+        self.mrp_in  = self.sumFilter(range_moves, self.location_id.id, move_type='mrp_operation', location_dest=True)
+        self.mrp_out   = self.sumFilter(range_moves, self.location_id.id, move_type='mrp_operation')
+        self.transfer_in    = self.sumFilter(range_moves, self.location_id.id, move_type='transfer', location_dest=True)
+        self.transfer_out     = self.sumFilter(range_moves, self.location_id.id, move_type='transfer')
+        self.consignment_in  = self.sumFilter(range_moves, self.location_id.id, move_type='consignment', location_dest=True)
+        self.consignment_out   = self.sumFilter(range_moves, self.location_id.id, move_type='consignment')
+        self.adjust             = self.sumFilter(range_moves, self.location_id.id, move_type='inventary', location_dest=True) - self.sumFilter(range_moves, self.location_id.id, move_type='inventary')
 
     def sumFilter(self, moves, location, location_dest=False, move_type=False):
         location_type = "location_dest_id" if location_dest else "location_id"
         if(moves != []):
-            #Filtra todos los movimientos donde la location origen/destino sea la indicada
             moves = [x for x in moves if x[location_type] == location]
-            #aplica filtro por move_type si el valor esta asignado
             if move_type and moves:
                 moves = [x for x in moves if x['type'] == move_type]
-            #obtiene todas las cantidades de los data data_filtered
             if moves:
                 qtys = [x['qty'] for x in moves]
                 return reduce(lambda x, y: x + y, qtys) if len(qtys) > 1 else qtys[0]
