@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_report_rotating_inventory" model="ir.ui.view">
+        <field name="name">Reporte Inventario Rotativo</field>
+        <field name="model">report.rotating.inventory</field>
+        <field name="arch" type="xml">
+            <form string="Seleccione el rango de fechas">
+                <group>
+                    <group>
+                        <field name="initial_date"/>
+                        <field name="final_date"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="open_table" string="Aceptar" type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-default" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_report_rotating_inventory" model="ir.actions.act_window">
+        <field name="name">Inventario Rotativo</field>
+        <field name="res_model">report.rotating.inventory</field>
+        <field name="view_type">form</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_report_rotating_inventory"/>
+        <field name="target">new</field>
+    </record>
+    <record id="view_report_rotating_inventory_tree" model="ir.ui.view">
+        <field name="name">view.report.rotating.inventory.tree</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <tree string="Reporte de Inventario Rotativo">
+                <field name="product_id"/>
+                <field name="location_id"/>
+                <field name="categoria_interna"/>
+                <field name="lot_id"/>
+                <field name="package_id"/>
+                <field name="inventario_inicial"/>
+                <field name="compras"/>
+                <field name="compras_devolucion"/>
+                <field name="ventas"/>
+                <field name="ventas_devolucion"/>
+                <field name="interno_entrada"/>
+                <field name="interno_salida"/>
+                <field name="produccion_entrada"/>
+                <field name="produccion_salida"/>
+                <field name="traspaso_entrada"/>
+                <field name="traspaso_salida"/>
+                <field name="maquilador_entrada"/>
+                <field name="maquilador_salida"/>
+                <field name="ajustes"/>
+                <field name="inventario_final"/>
+                <field name="kgs"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_report_rotating_inventory_form" model="ir.ui.view">
+        <field name="name">view.rotating.inventory.form</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <form string="Reporte Inventario Rotativo">
+                <field name="product_id"/>
+                <field name="location_id"/>
+                <field name="categoria_interna"/>
+                <field name="lot_id"/>
+                <field name="package_id"/>
+                <field name="inventario_inicial"/>
+                <field name="compras"/>
+                <field name="compras_devolucion"/>
+                <field name="ventas"/>
+                <field name="ventas_devolucion"/>
+                <field name="interno_entrada"/>
+                <field name="interno_salida"/>
+                <field name="produccion_entrada"/>
+                <field name="produccion_salida"/>
+                <field name="traspaso_entrada"/>
+                <field name="traspaso_salida"/>
+                <field name="maquilador_entrada"/>
+                <field name="maquilador_salida"/>
+                <field name="ajustes"/>
+                <field name="inventario_final"/>
+            </form>
+        </field>
+    </record>
+    <menuitem id="menu_report_rotating_inventory" name="Inventario Rotativo" parent="stock.menu_warehouse_report" sequence="100" action="action_report_rotating_inventory"/>
+</odoo>
