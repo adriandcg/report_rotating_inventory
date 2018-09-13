@@ -10,9 +10,12 @@ class WizardReportRotatingInventory(models.TransientModel):
     _name = 'report.rotating.inventory'
     _description = 'Report Rotating Inventory'
 
-
+    
+    company_id = fields.Many2one('res.company', string=u'Company')
     initial_date = fields.Date('Initial', help="You should specify a initial date", required=True)
     final_date = fields.Date('Final', help="You should specify a final date", required=True)
+    category_id = fields.Many2one('product.category',string=u'Category')
+    location_id = fields.Many2one('stock.location', string=u'Location')
 
     def open_table(self):
         self.ensure_one()
@@ -24,9 +27,15 @@ class WizardReportRotatingInventory(models.TransientModel):
         'views': [(tree_view_id, 'tree'), (form_view_id, 'form')],
         'view_mode': 'tree,form',
         'name': _('Rotating Inventory'),
-        'res_model': 'stock.quant',
-        'context': {'initial_date': self.initial_date, 'final_date': self.final_date}
+        'res_model': 'stock.quant'
         }
+        action = self.getDomain({'company_id': self.company_id, 'location_id': self.location_id, 'product_id.category_id': self.category_id}, action)
+        return action
+    
+    def getDomain(self, fields, action):
+        domains = [(k, '=',v.id) for k,v in fields.items() if v]
+        if domains:
+            action['domain'] = domains
         return action
 
 class stock_quant_rotating(models.Model):
