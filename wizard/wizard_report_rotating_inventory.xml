@@ -9,10 +9,13 @@
                     <group>
                         <field name="initial_date"/>
                         <field name="final_date"/>
+                        <field name="company_id"/>
+                        <field name="category_id"/>
+                        <field name="location_id" />
                     </group>
                 </group>
                 <footer>
-                    <button name="open_table" string="Ok" type="object" class="btn-primary"/>
+                    <button name="open_table" string="Acept" type="object" class="btn-primary"/>
                     <button string="Cancel" class="btn-default" special="cancel" />
                 </footer>
             </form>
