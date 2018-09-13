@@ -9,9 +9,9 @@
                     <group>
                         <field name="initial_date"/>
                         <field name="final_date"/>
-                        <field name="company_id"/>
-                        <field name="category_id"/>
-                        <field name="location_id" />
+                        <field name="company_id" options="{'no_quick_create': True, 'no_create_edit' : True}"/>
+                        <field name="category_id" options="{'no_quick_create': True, 'no_create_edit' : True}"/>
+                        <field name="location_id" options="{'no_quick_create': True, 'no_create_edit' : True}"/>
                     </group>
                 </group>
                 <footer>

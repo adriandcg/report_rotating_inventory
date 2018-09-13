@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import api, fields, models, _
+from odoo import api, fields, exceptions, models, _
 import datetime
 import time
 from functools import reduce
@@ -10,12 +10,31 @@ class WizardReportRotatingInventory(models.TransientModel):
     _name = 'report.rotating.inventory'
     _description = 'Report Rotating Inventory'
 
+    def _get_date_month_before(self, initial=True):
+        actual = datetime.date.today().replace(day=1) - datetime.timedelta(days=1)
+        return actual.replace(day=1) if initial else actual
+
+    def _get_default_initial_date(self):
+        return self._get_date_month_before()
+    
+    def _get_default_final_date(self):
+        return self._get_date_month_before(False)
     
     company_id = fields.Many2one("res.company", string="Company")
-    initial_date = fields.Date('Initial', help="You should specify a initial date", required=True)
-    final_date = fields.Date('Final', help="You should specify a final date", required=True)
+    initial_date = fields.Date('Initial', help="You should specify a initial date", required=True, default=_get_default_initial_date)
+    final_date = fields.Date('Final', help="You should specify a final date", required=True, default=_get_default_final_date)
     category_id = fields.Many2one("product.category",string="Category")
     location_id = fields.Many2one("stock.location", string="Location")
+
+    @api.onchange('initial_date', 'final_date')
+    def _onchange_date_range(self):
+        if self.initial_date >= self.final_date:
+            return {
+                'warning': {
+                    'title': "Error in date range",
+                    'message': "The initial date must not be greater than the final date"
+                }
+            }
 
     def open_table(self):
         self.ensure_one()
@@ -38,6 +57,8 @@ class WizardReportRotatingInventory(models.TransientModel):
         if domains:
             action['domain'] = domains
         return action
+    
+
 
 class stock_quant_rotating(models.Model):
     _inherit = 'stock.quant'
