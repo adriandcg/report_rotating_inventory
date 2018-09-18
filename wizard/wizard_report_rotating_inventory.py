@@ -29,10 +29,10 @@ class WizardReportRotatingInventory(models.TransientModel):
         """
         return self._get_date_month_before(False)
     
-    company_id = fields.Many2one("res.company", string="Company", default=1)
+    company_id = fields.Many2one("res.company", string="Company")
     warehouse_ids = fields.Many2many("stock.warehouse", string="Warehouses")
-    initial_date = fields.Date("Initial", help="You should specify a initial date", required=True, default=_get_default_initial_date)
-    final_date = fields.Date("Final", help="You should specify a final date", required=True, default=_get_default_final_date)
+    initial_date = fields.Date("Initial", help="You should specify a initial date", required=True) #, default=_get_default_initial_date
+    final_date = fields.Date("Final", help="You should specify a final date", required=True) #, default=_get_default_final_date
     category_ids = fields.Many2many("product.category",string="Category")
     location_id = fields.Many2one("stock.location", string="Location")
     
