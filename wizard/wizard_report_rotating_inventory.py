@@ -33,10 +33,10 @@ class WizardReportRotatingInventory(models.TransientModel):
     warehouse_ids = fields.Many2many("stock.warehouse", string="Warehouses")
     initial_date = fields.Date("Initial", help="You should specify a initial date", required=True, default=_get_default_initial_date)
     final_date = fields.Date("Final", help="You should specify a final date", required=True, default=_get_default_final_date)
-    category_id = fields.Many2many("product.category",string="Category")
+    category_ids = fields.Many2many("product.category",string="Category")
     location_id = fields.Many2one("stock.location", string="Location")
     
-    @api.onchange('company_id')
+    #@api.onchange('company_id')
     def _onchange_company_id(self):
         """
         Make change of warehouses when company is modify
@@ -49,7 +49,7 @@ class WizardReportRotatingInventory(models.TransientModel):
                 'value':  {'warehouse_ids': False}
                 }
 
-    @api.onchange('warehouse_ids', 'company_id')
+    #@api.onchange('warehouse_ids', 'company_id')
     def _onchange_warehouse(self):
         """
         Make change of locations when company or warehouse is modify
@@ -74,7 +74,7 @@ class WizardReportRotatingInventory(models.TransientModel):
                 }        
             
 
-    @api.onchange('initial_date', 'final_date')
+    #@api.onchange('initial_date', 'final_date')
     def _onchange_date_range(self):
         if self.initial_date >= self.final_date:
             return {
@@ -100,11 +100,12 @@ class WizardReportRotatingInventory(models.TransientModel):
         domains = self.getDomain({
                                     'company_id': ['=',self.company_id],
                                     'location_id': ['in',self.location_id],
-                                    'product_id.product_tmpl_id.categ_id': ['in', self.category_id]
+                                    'product_id.product_tmpl_id.categ_id': ['in', self.category_ids]
                                 })
         if domains:
             action['domain'] = domains
         return action
+
     def domainArray(self, domain):
         if domain[0] = 'in':
             if domain[1] != []:
