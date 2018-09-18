@@ -11,20 +11,68 @@ class WizardReportRotatingInventory(models.TransientModel):
     _description = 'Report Rotating Inventory'
 
     def _get_date_month_before(self, initial=True):
+        """
+        Make a date range of a month before
+        """
         actual = datetime.date.today().replace(day=1) - datetime.timedelta(days=1)
         return actual.replace(day=1) if initial else actual
 
     def _get_default_initial_date(self):
+        """
+        Return the first day of the month before
+        """
         return self._get_date_month_before()
     
     def _get_default_final_date(self):
+        """
+        Return the last day of the month before
+        """
         return self._get_date_month_before(False)
     
-    company_id = fields.Many2one("res.company", string="Company")
-    initial_date = fields.Date('Initial', help="You should specify a initial date", required=True, default=_get_default_initial_date)
-    final_date = fields.Date('Final', help="You should specify a final date", required=True, default=_get_default_final_date)
-    category_id = fields.Many2one("product.category",string="Category")
+    company_id = fields.Many2one("res.company", string="Company", default=1)
+    warehouse_ids = fields.Many2many("stock.warehouse", string="Warehouses")
+    initial_date = fields.Date("Initial", help="You should specify a initial date", required=True, default=_get_default_initial_date)
+    final_date = fields.Date("Final", help="You should specify a final date", required=True, default=_get_default_final_date)
+    category_id = fields.Many2many("product.category",string="Category")
     location_id = fields.Many2one("stock.location", string="Location")
+    
+    @api.onchange('company_id')
+    def _onchange_company_id(self):
+        """
+        Make change of warehouses when company is modify
+        """
+        warehouse_ids = self.env['stock.warehouse'].sudo().search([])
+        if self.company_id:
+            warehouse_ids = self.env['stock.warehouse'].sudo().search([('company_id', '=', self.company_id.id)])
+        return {
+                'domain': {'warehouse_ids': [('id', 'in' [x.id for x in warehouse_ids])]},
+                'value':  {'warehouse_ids': False}
+                }
+
+    @api.onchange('warehouse_ids', 'company_id')
+    def _onchange_warehouse(self):
+        """
+        Make change of locations when company or warehouse is modify
+        """
+        location_ids = self.env['stock.location']
+        add_location_ids = []
+        warehouses = self.warehouse_ids
+
+        if !self.warehouse_ids and self.company_id:
+            warehouses = self.env['stock.warehouse'].search([('company_id', '=', company.id)])
+
+        for w in warehouses:
+            temp_location_id = w.view_location_id.id
+            add_location_ids.extend([x.id for x in location_ids.seach([('location_id', 'child_of', temp_location_id)])])
+        
+        location_ids = add_location_ids if add_location_ids != [] else [x.id for x in location_ids]
+        return {
+                'domain': {
+                        'location_id': [('id', 'in', location_ids)]
+                        },
+                'value': {'location_id': False}
+                }        
+            
 
     @api.onchange('initial_date', 'final_date')
     def _onchange_date_range(self):
@@ -49,14 +97,22 @@ class WizardReportRotatingInventory(models.TransientModel):
         'res_model': 'stock.quant',
         'context': {'initial_date': self.initial_date, 'final_date': self.final_date}
         }
-        action = self.getDomain({'company_id': self.company_id, 'location_id': self.location_id, 'product_id.product_tmpl_id.categ_id': self.category_id}, action)
-        return action
-    
-    def getDomain(self, fields, action):
-        domains = [(k, '=',v.id) for k,v in fields.items() if v]
+        domains = self.getDomain({
+                                    'company_id': ['=',self.company_id],
+                                    'location_id': ['in',self.location_id],
+                                    'product_id.product_tmpl_id.categ_id': ['in', self.category_id]
+                                })
         if domains:
             action['domain'] = domains
         return action
+    def domainArray(self, domain):
+        if domain[0] = 'in':
+            if domain[1] != []:
+                return [d.id for d in domain]
+
+    def getDomain(self, fields, action):
+        domains = [(k, v[0], self.domainArray(v)) for k,v in fields.items() if v[1]]
+        return domains
     
 
 
@@ -66,7 +122,7 @@ class stock_quant_rotating(models.Model):
     category            = fields.Many2one('product.category', string='Category', related='product_id.product_tmpl_id.categ_id')
     initial             = fields.Float(string="Initial", compute='_compute_initial')
     purchase            = fields.Float(string="Purchase")
-    purchase_refund     = fields.Float(string="purchase Dev.")
+    purchase_refund     = fields.Float(string="Purchase Refund")
     sale                = fields.Float(string="Sale")
     sale_refund         = fields.Float(string="Sale Refund")
     internal_in     = fields.Float(string="Internal In")
@@ -77,7 +133,7 @@ class stock_quant_rotating(models.Model):
     transfer_out     = fields.Float(string="Transfer Out")
     consignment_in  = fields.Float(string="Consignment In")
     consignment_out   = fields.Float(string="Consignment Out")
-    adjust             = fields.Float(string="adjust")
+    adjust             = fields.Float(string="Adjust")
     final               = fields.Float(string="Final")
     kgs			        = fields.Float(string="KG")
 
