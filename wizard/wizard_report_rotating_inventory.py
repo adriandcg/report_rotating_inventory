@@ -58,8 +58,8 @@ class WizardReportRotatingInventory(models.TransientModel):
         add_location_ids = []
         warehouses = self.warehouse_ids
 
-        if !self.warehouse_ids and self.company_id:
-            warehouses = self.env['stock.warehouse'].search([('company_id', '=', company.id)])
+        if not self.warehouse_ids and self.company_id:
+            warehouses = self.env['stock.warehouse'].search([('company_id', '=', self.company_id.id)])
 
         for w in warehouses:
             temp_location_id = w.view_location_id.id
